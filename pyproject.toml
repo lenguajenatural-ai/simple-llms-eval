@@ -1,0 +1,14 @@
+[project]
+name = "simple-llms-eval"
+version = "0.1.0"
+description = "Library with metrics to evaluate large language models."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "datasets>=3.2.0",
+    "evaluate>=0.4.3",
+    "sentence-transformers>=3.4.0",
+    "torch>=2.5.1",
+    "transformers>=4.48.1",
+    "vllm>=0.7.0",
+]
