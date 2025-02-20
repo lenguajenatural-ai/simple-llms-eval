@@ -1,5 +1,5 @@
-# eval-llms
-`eval-llms` is a library that provides various useful metrics to evaluate LLMs and has been created to facilitate the creation of benchmarks 
+# simple-llms-eval
+`simple-llms-eval` is a library that provides various useful metrics to evaluate LLMs and has been created to facilitate the creation of benchmarks 
 with old, recent and upcoming models.
 
 The metrics follow the same interface as those of Hugging Face's [Evaluate](https://huggingface.co/docs/evaluate/index) library.
@@ -20,7 +20,7 @@ uv run python <your_script.py>
 ## Example Usage
 
 ```python
-from evaluation_metrics import BiEncoderScore
+from simple_llms_eval import BiEncoderScore
 
 references = [
     "El sol brilla en el cielo.",
