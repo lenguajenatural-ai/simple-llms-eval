@@ -1,6 +1,7 @@
 import datasets
 import evaluate
 import re
+import requests
 import numpy as np
 from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
@@ -176,17 +177,21 @@ class PrometheusScore(evaluate.Metric):
 
     def _compute(
         self,
-        model_name: str,
         predictions: list[str],
         references: list[str],
         contexts: list[str],
+        model_name: str = None, # Not necessary if API is used
         previous_conversations: list[list[dict]] = [],
         return_feedbacks: bool = False,
-        return_average: bool = False
+        return_average: bool = False,
+        use_api: bool = False,
+        request_url: str = None
     ) -> list[int] | tuple[list[int], list[str]] | tuple[list[int], float] | tuple[list[int], list[str], float]:
 
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = LLM(model_name)
+        if not use_api:
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            model = LLM(model_name)
+            
         messages = []
 
         if previous_conversations:
@@ -198,7 +203,11 @@ class PrometheusScore(evaluate.Metric):
                     reference = reference
                 )
 
-                message = tokenizer.apply_chat_template([{"role": "user", "content": prompt}], tokenize=False, add_generation_prompt=True)
+                if not use_api:
+                    message = tokenizer.apply_chat_template([{"role": "user", "content": prompt}], tokenize=False, add_generation_prompt=True)
+                else:
+                    message = [{"role": "user", "content": prompt}]
+
                 messages.append(message)
         else:
             for prediction, reference, context in zip(predictions, references, contexts):
@@ -209,12 +218,26 @@ class PrometheusScore(evaluate.Metric):
                     reference = reference
                 )
 
-                message = tokenizer.apply_chat_template([{"role": "user", "content": prompt}], tokenize=False, add_generation_prompt=True)
+                if not use_api:
+                    message = tokenizer.apply_chat_template([{"role": "user", "content": prompt}], tokenize=False, add_generation_prompt=True)
+                else:
+                    message = [{"role": "user", "content": prompt}]
+
                 messages.append(message)
         
-        sampling_params = SamplingParams(max_tokens=1024, top_p=0.8, temperature=0.3, repetition_penalty=1.05, min_p= 0.1, stop=["<|eot_id|>", "<|im_end|>"])
-        outputs =  model.generate(messages, sampling_params=sampling_params)
-        feedbacks = [output.outputs[0].text for output in outputs]
+        if not use_api:
+            sampling_params = SamplingParams(max_tokens=1024, top_p=0.8, temperature=0.3, repetition_penalty=1.05, min_p= 0.1, stop=["<|eot_id|>", "<|im_end|>"])
+            outputs =  model.generate(messages, sampling_params=sampling_params)
+            feedbacks = [output.outputs[0].text for output in outputs]
+        else:
+            response = requests.post(request_url, json={"messages": messages})
+            data = response.json()
+            if not data.get("success"):
+                print(f"Prometheus API inference failed.")
+                return
+            feedbacks = data.get("predictions")
+
+
         scores = list(map(self.extract_score, feedbacks))
 
 
@@ -228,3 +251,4 @@ class PrometheusScore(evaluate.Metric):
             return scores, feedbacks
 
         return scores
+
