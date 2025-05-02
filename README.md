@@ -16,6 +16,7 @@ uv sync
 uv run python <your_script.py>
 ```
 
+**Note: You can also avoid using uv by simply installing with: `pip install .` in the current directory.
 
 ## Example Usage
 
